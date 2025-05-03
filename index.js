@@ -15,8 +15,12 @@ mongoose.connect(MONGO_URI, {useNewUrlParser: true, useUnifiedTopology: true})
 .catch(err => {
     console.error('MongoDB connection error:', err);
 });
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true, // Optional, if you need to send cookies or auth headers
+  }));app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
 
