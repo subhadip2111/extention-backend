@@ -28,81 +28,73 @@ app.use(express.urlencoded({extended:true}));
 app.get('/',async(req,res)=>{
 return res.send('Hello from the server');
 })
+
 app.post('/api/jobs', async (req, res) => {
     const { email, jobs } = req.body;
     console.log(`Received job data from ${email}:`, jobs);
 
     try {
+        // 1. Validate the input data (important for security and data integrity)
         if (!email || !jobs || !Array.isArray(jobs)) {
             return res.status(400).json({ message: 'Invalid request: Missing email or jobs data' });
         }
 
-        const savedJobs = [];
+        // 2. Process each job in the array
+        const savedJobs = [];  // Array to store successfully saved jobs
         for (const jobData of jobs) {
             try {
+                // 2.1 Check if the job already exists based on the URL
                 const existingJob = await Job.findOne({ url: jobData.url });
-
                 if (existingJob) {
-                    console.log(`Job already exists, updating: ${jobData.url}`);
-                    await Job.findOneAndUpdate(
-                        { url: jobData.url },
-                        {
-                            $set: {
-                                title: jobData.title,
-                                description: jobData.description || '',
-                                skills: jobData.skills || [],
-                                salary: jobData.salary || 'N/A',
-                                location: jobData.location,
-                                postedDate: jobData.datePosted || jobData.postedDate,
-                            }
-                        },
-                        { new: true }
-                    );
-                    continue;
+                    console.log(`Skipping duplicate job: ${jobData.url}`);
+                    continue; // Skip to the next job
                 }
 
-                // ✅ FIXED: Check for company properly
-                let company = null;
+                // 2.2 Ensure the company is created or fetched
+                let company;
                 if (jobData.company) {
                     company = await Company.findOne({ name: jobData.company });
-
                     if (!company) {
+                        // If the company doesn't exist, create it
                         company = new Company({
                             name: jobData.company,
-                            location: jobData.location || 'Unknown',
-                            website: 'N/A',
+                            location: jobData.location || 'N/A', // Default location if not provided
+                            website: 'N/A', // Add company website if available
                         });
                         await company.save();
                         console.log(`Created company: ${company.name}`);
                     }
                 }
 
-                // ✅ FIXED: Use company?._id instead of company._id
+                // 2.3 Create a new Job object with the companyId linked
                 const job = new Job({
-                    companyId: company?._id || null,
+                    companyId: company._id,  // Link the job to the company
                     title: jobData.title,
-                    role: jobData.role || '',
-                    description: jobData.description || '',
-                    skills: jobData.skills || [],
-                    salary: jobData.salary || 'N/A',
-                    location: jobData.location || '',
-                    postedDate: jobData.datePosted || jobData.postedDate || '',
+                    role: jobData.role || 'N/A',  // If role is not present, set to 'N/A'
+                    description: jobData.description || 'N/A',  // If description is not present, set to 'N/A'
+                    skills: jobData.skills || [],  // Default to an empty array if no skills
+                    salary: jobData.salary || 'N/A',  // Default salary if not available
+                    location: jobData.location || 'N/A',  // Default location if not available
+                    postedDate: jobData.datePosted || 'N/A',  // If datePosted is not available, use 'N/A'
                     url: jobData.url,
                 });
 
+                // 2.4 Save the job to the database
                 const newJob = await job.save();
                 savedJobs.push(newJob);
                 console.log(`Saved job: ${newJob.title} - ${newJob.url}`);
 
             } catch (error) {
-                console.error('Error saving job:', error.message);
+                console.error('Error saving job:', error);
+                // Don't stop the process for errors with individual jobs
             }
         }
 
+        // 3. Send a response to the Chrome extension
         if (savedJobs.length > 0) {
             res.status(200).json({ message: 'Jobs saved successfully', savedJobs });
         } else {
-            res.status(200).json({ message: 'No new jobs to save' });
+            res.status(200).json({ message: 'No new jobs to save' }); // Send 200 even if no new jobs
         }
 
     } catch (error) {
