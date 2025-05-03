@@ -21,7 +21,9 @@ app.use(express.urlencoded({extended:true}));
 
 
 
-
+app.get('/',async(req,res)=>{
+return res.send('Hello from the server');
+})
 app.post('/api/jobs', async (req, res) => {
     const { email, jobs } = req.body;
     console.log(`Received job data from ${email}:`, jobs);
