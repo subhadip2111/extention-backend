@@ -2,27 +2,27 @@ const mongoose = require('mongoose');
 
 // Define the Company schema
 const companySchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    location: { type: String, required: true },
-    website: { type: String, required: true },
+    name: { type: String, required: false, default: "" },
+    location: { type: String, required: false, default: "" },
+    website: { type: String, required: false, default: "" },
     // other relevant company information
 });
 
 // Define the Job schema
 const jobSchema = new mongoose.Schema({
-    companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true }, // Foreign key
-    title: { type: String, required: true },
-    role: { type: String, required: true },
-    description: { type: String, required: true },
-    skills: [{ type: String, required: true }],
+    companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: false }, // Foreign key, optional now
+    title: { type: String, required: false, default: "" },
+    role: { type: String, required: false, default: "" },
+    description: { type: String, required: false, default: "" },
+    skills: [{ type: String, required: false, default: [] }], // Default empty array
     salary: {
-        min: { type: Number, required: true },
-        max: { type: Number, required: true },
-        currency: { type: String, required: true, default: 'INR' }
+        min: { type: Number, required: false, default: 0 },
+        max: { type: Number, required: false, default: 0 },
+        currency: { type: String, required: false, default: 'INR' }
     },
-    location: { type: String, required: true },
-    postedDate: { type: Date, required: true },
-    url: { type: String, required: true, unique: true }, // Ensure no duplicate jobs
+    location: { type: String, required: false, default: "" },
+    postedDate: { type: Date, required: false, default: Date.now }, // Default to current date if not provided
+    url: { type: String, required: false, default: "" }, // Ensure no duplicate jobs, can be empty if not given
     // other relevant job information
 });
 
